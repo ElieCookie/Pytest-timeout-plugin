@@ -1,35 +1,42 @@
 import time
 import pytest
 
+# Key to store suite timeout expiration in pytest config stash
+suite_timeout_stash = pytest.StashKey[float]()
+
 
 def pytest_addoption(parser):
-    parser.addoption(
+    group = parser.getgroup("custom suite timeout")
+    group.addoption(
         "--suite-timeout",
         action="store",
-        type=int,
+        type=float,
         default=None,
-        help="Fail all tests if the suite runtime exceeds this timeout in seconds.",
+        dest="suite_timeout_value",
+        metavar="SECONDS",
+        help="⏱️ Set a timeout (in seconds) for the entire test suite. If the timeout is reached,"
+        " the test session will fail. Does not stop tests already in progress.",
     )
 
 
 def pytest_configure(config):
-    timeout = config.getoption("suite_timeout")
-    if timeout:
-        config.suite_timeout = timeout
-        config.suite_start_time = time.time()
-        config.suite_timed_out = False
+    timeout_seconds = config.getoption("suite_timeout_value")
+    if timeout_seconds is not None:
+        deadline = time.time() + timeout_seconds
+        print(f"⏰ [suite-timeout] Suite timeout set to {timeout_seconds:.2f} seconds")
+    else:
+        deadline = 0.0
+        print("⚙️ [suite-timeout] No suite timeout configured")
+    config.stash[suite_timeout_stash] = deadline
 
 
-def pytest_runtest_setup(item):
+def pytest_runtest_makereport(item, call):
     config = item.config
-    timeout = getattr(config, "suite_timeout", None)
-    start_time = getattr(config, "suite_start_time", None)
-    if timeout and start_time:
-        elapsed = time.time() - start_time
-        if elapsed > timeout:
-            config.suite_timed_out = True
-            pytest.fail(
-                f"Test suite exceeded the timeout of {timeout} seconds "
-                f"(Elapsed: {int(elapsed)}s)",
-                pytrace=False,
-            )
+    deadline = config.stash.get(suite_timeout_stash, 0.0)
+    current_time = time.time()
+
+    if deadline and current_time > deadline:
+        timeout_value = config.getoption("suite_timeout_value")
+        item.session.shouldfail = (
+            f"💥 suite-timeout: exceeded {timeout_value:.2f} seconds ⛔"
+        )
