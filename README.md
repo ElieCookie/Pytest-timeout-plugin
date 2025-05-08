@@ -3,7 +3,10 @@
 A Pytest plugin to fail a test suite if it runs longer than a specified timeout.
 
 ## Installation
-- pip install git+https://github.com/ElieCookie/Pytest-timeout-plugin.git
+
+```bash
+pip install git+https://github.com/ElieCookie/Pytest-timeout-plugin.git
+```
 
 ## Usage
 
