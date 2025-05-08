@@ -9,13 +9,12 @@ setup(
     ],
     entry_points={  # Tell pytest to load the plugin
         "pytest11": [
-            "suite-timeout = pytest_suite_timeout",
+            "suite-timeout = pytest_suite_timeout.plugin",
         ],
     },
     classifiers=[  # Optional classifiers for your package
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.10",
-        "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
 )
